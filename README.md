@@ -189,15 +189,15 @@ Formato unificado de erro:
 
 ```bash
 # 1. Sobe o stack e popula demo
-python scripts/tasks.py up && python scripts/seed.py
+python scripts/tasks.py up && uv run python scripts/seed.py
 
 # 2. Inicia simulador de leituras (background)
-python scripts/simulate_readings.py --interval 2 --cycles 30 &
+uv run python scripts/simulate_readings.py --interval 2 --cycles 30
 
 # 3. Login para obter token
 TOKEN=$(curl -ks -X POST https://localhost:8443/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@terramind.local","password":"Terramind#Admin2026"}' \
+  -d '{"email":"admin@gmail.com","password":"Terramind#Admin2026"}' \
   | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 
 # 4. Confere alertas gerados pelo alert-service

@@ -18,12 +18,56 @@ from urllib.parse import urljoin
 import httpx
 
 BASE_URL = os.environ.get("TERRAMIND_BASE_URL", "https://localhost:8443")
-ADMIN_EMAIL = "admin@terramind.local"
+ADMIN_EMAIL = "admin@gmail.com"
 ADMIN_PASSWORD = "Terramind#Admin2026"
 
 
 def url(path: str) -> str:
     return urljoin(BASE_URL.rstrip("/") + "/", path.lstrip("/"))
+
+
+def find_farm_id(client: httpx.Client, headers: dict[str, str], name: str) -> str | None:
+    r = client.get(url("/farm/farms"), headers=headers)
+    if r.status_code != 200:
+        print(f"farm list failed: {r.status_code} {r.text}", file=sys.stderr)
+        return None
+    for farm in r.json():
+        if farm.get("name") == name:
+            return farm["id"]
+    return None
+
+
+def find_plot_id(
+    client: httpx.Client,
+    headers: dict[str, str],
+    *,
+    farm_id: str,
+    name: str,
+) -> str | None:
+    r = client.get(url(f"/farm/plots?farm_id={farm_id}"), headers=headers)
+    if r.status_code != 200:
+        print(f"plot list failed: {r.status_code} {r.text}", file=sys.stderr)
+        return None
+    for plot in r.json():
+        if plot.get("name") == name:
+            return plot["id"]
+    return None
+
+
+def find_sensor_id(
+    client: httpx.Client,
+    headers: dict[str, str],
+    *,
+    serial_number: str,
+) -> str | None:
+    r = client.get(url("/sensor/sensors"), headers=headers)
+    if r.status_code != 200:
+        print(f"sensor list failed: {r.status_code} {r.text}", file=sys.stderr)
+        return None
+    for sensor in r.json():
+        if sensor.get("serial_number") == serial_number:
+            return sensor["id"]
+    return None
 
 
 def main() -> int:
@@ -53,50 +97,66 @@ def main() -> int:
         token = r.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        # Cria fazenda demo
-        r = client.post(
-            url("/farm/farms"),
-            json={
-                "name": "Fazenda Vale Verde",
-                "area_ha": 150.5,
-                "latitude": -22.123456,
-                "longitude": -47.654321,
-                "address": "Estrada Rural, km 12 — Piracicaba/SP",
-            },
-            headers=headers,
-        )
-        if r.status_code != 201:
-            print(f"farm create failed: {r.status_code} {r.text}", file=sys.stderr)
-            return 1
-        farm_id = r.json()["id"]
-        print(f"farm: {farm_id}")
+        farm_name = "Fazenda Vale Verde"
+        farm_id = find_farm_id(client, headers, farm_name)
+        if farm_id is None:
+            r = client.post(
+                url("/farm/farms"),
+                json={
+                    "name": farm_name,
+                    "area_ha": 150.5,
+                    "latitude": -22.123456,
+                    "longitude": -47.654321,
+                    "address": "Estrada Rural, km 12 — Piracicaba/SP",
+                },
+                headers=headers,
+            )
+            if r.status_code != 201:
+                print(f"farm create failed: {r.status_code} {r.text}", file=sys.stderr)
+                return 1
+            farm_id = r.json()["id"]
+            print(f"farm created: {farm_id}")
+        else:
+            print(f"farm reused: {farm_id}")
 
         # Lista culturas e pega 'milho'
         r = client.get(url("/farm/crops"), headers=headers)
         crops = {c["name"]: c["id"] for c in r.json()}
         crop_id = crops.get("milho")
 
-        # Cria talhão
-        r = client.post(
-            url("/farm/plots"),
-            json={
-                "farm_id": farm_id,
-                "crop_id": crop_id,
-                "name": "Talhão A — milho safra 26/27",
-                "area_ha": 35.0,
-                "planted_at": "2026-04-15",
-                "expected_harvest_at": "2026-10-20",
-            },
-            headers=headers,
-        )
-        if r.status_code != 201:
-            print(f"plot create failed: {r.status_code} {r.text}", file=sys.stderr)
-            return 1
-        plot_id = r.json()["id"]
-        print(f"plot: {plot_id}")
+        plot_name = "Talhão A — milho safra 26/27"
+        plot_id = find_plot_id(client, headers, farm_id=farm_id, name=plot_name)
+        if plot_id is None:
+            r = client.post(
+                url("/farm/plots"),
+                json={
+                    "farm_id": farm_id,
+                    "crop_id": crop_id,
+                    "name": plot_name,
+                    "area_ha": 35.0,
+                    "planted_at": "2026-04-15",
+                    "expected_harvest_at": "2026-10-20",
+                },
+                headers=headers,
+            )
+            if r.status_code != 201:
+                print(f"plot create failed: {r.status_code} {r.text}", file=sys.stderr)
+                return 1
+            plot_id = r.json()["id"]
+            print(f"plot created: {plot_id}")
+        else:
+            print(f"plot reused: {plot_id}")
 
         # Cria sensores
         for stype, serial in (("soil_moisture", "SM-001"), ("temperature", "T-001")):
+            sensor_id = find_sensor_id(
+                client,
+                headers,
+                serial_number=serial,
+            )
+            if sensor_id is not None:
+                print(f"sensor {stype} reused: {sensor_id}")
+                continue
             r = client.post(
                 url("/sensor/sensors"),
                 json={
@@ -111,7 +171,7 @@ def main() -> int:
             if r.status_code != 201:
                 print(f"sensor create failed: {r.status_code} {r.text}", file=sys.stderr)
                 return 1
-            print(f"sensor {stype}: {r.json()['id']}")
+            print(f"sensor {stype} created: {r.json()['id']}")
 
         print("\nseed concluído. credenciais:")
         print(f"  email:    {ADMIN_EMAIL}")

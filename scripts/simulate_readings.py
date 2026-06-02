@@ -21,7 +21,7 @@ from urllib.parse import urljoin
 import httpx
 
 BASE_URL = os.environ.get("TERRAMIND_BASE_URL", "https://localhost:8443")
-ADMIN_EMAIL = os.environ.get("TERRAMIND_ADMIN_EMAIL", "admin@terramind.local")
+ADMIN_EMAIL = os.environ.get("TERRAMIND_ADMIN_EMAIL", "admin@gmail.com")
 ADMIN_PASSWORD = os.environ.get("TERRAMIND_ADMIN_PASSWORD", "Terramind#Admin2026")
 
 
