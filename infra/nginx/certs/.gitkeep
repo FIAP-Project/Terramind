@@ -1,0 +1,9 @@
+Os certificados TLS de dev devem ser gerados localmente com:
+  - macOS/Linux: make certs
+  - Windows:     .\tasks.ps1 certs
+
+Esperados aqui:
+  - cert.pem
+  - key.pem
+
+Ambos NÃO devem ser commitados (estão no .gitignore).

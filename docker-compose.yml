@@ -1,0 +1,202 @@
+name: terramind
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: terramind-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-terramind}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-terramind_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-terramind}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    # Bind apenas ao loopback do host — não exposto à LAN.
+    # Comente as duas linhas abaixo para isolamento total (nenhum acesso fora da rede Docker).
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-terramind} -d ${POSTGRES_DB:-terramind}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - terramind-net
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: terramind-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-terramind}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-terramind_dev_password}
+    # Bind ao loopback do host — não exposto à LAN. Management UI fica em http://127.0.0.1:15672.
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - terramind-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: terramind-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    # Bind ao loopback do host — não exposto à LAN.
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - terramind-net
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    container_name: terramind-auth
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: auth-service
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-terramind}:${POSTGRES_PASSWORD:-terramind_dev_password}@postgres:5432/${POSTGRES_DB:-terramind}
+      DB_SCHEMA: auth
+      AMQP_URL: amqp://${RABBITMQ_USER:-terramind}:${RABBITMQ_PASSWORD:-terramind_dev_password}@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_TTL_MINUTES: ${ACCESS_TOKEN_TTL_MINUTES:-15}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
+      EVENT_SIGNING_SECRET: ${EVENT_SIGNING_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://localhost:8443}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Sem `ports:` — acessível apenas via Nginx (Zero Trust de borda).
+    expose:
+      - "8001"
+    networks:
+      - terramind-net
+
+  farm-service:
+    build:
+      context: .
+      dockerfile: services/farm-service/Dockerfile
+    container_name: terramind-farm
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: farm-service
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-terramind}:${POSTGRES_PASSWORD:-terramind_dev_password}@postgres:5432/${POSTGRES_DB:-terramind}
+      DB_SCHEMA: farm
+      AMQP_URL: amqp://${RABBITMQ_USER:-terramind}:${RABBITMQ_PASSWORD:-terramind_dev_password}@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/1
+      JWT_SECRET: ${JWT_SECRET}
+      EVENT_SIGNING_SECRET: ${EVENT_SIGNING_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://localhost:8443}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    # Sem `ports:` — acessível apenas via Nginx.
+    expose:
+      - "8002"
+    networks:
+      - terramind-net
+
+  sensor-service:
+    build:
+      context: .
+      dockerfile: services/sensor-service/Dockerfile
+    container_name: terramind-sensor
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: sensor-service
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-terramind}:${POSTGRES_PASSWORD:-terramind_dev_password}@postgres:5432/${POSTGRES_DB:-terramind}
+      DB_SCHEMA: sensor
+      AMQP_URL: amqp://${RABBITMQ_USER:-terramind}:${RABBITMQ_PASSWORD:-terramind_dev_password}@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/2
+      JWT_SECRET: ${JWT_SECRET}
+      EVENT_SIGNING_SECRET: ${EVENT_SIGNING_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://localhost:8443}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    # Sem `ports:` — acessível apenas via Nginx.
+    expose:
+      - "8003"
+    networks:
+      - terramind-net
+
+  alert-service:
+    build:
+      context: .
+      dockerfile: services/alert-service/Dockerfile
+    container_name: terramind-alert
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: alert-service
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-terramind}:${POSTGRES_PASSWORD:-terramind_dev_password}@postgres:5432/${POSTGRES_DB:-terramind}
+      DB_SCHEMA: alert
+      AMQP_URL: amqp://${RABBITMQ_USER:-terramind}:${RABBITMQ_PASSWORD:-terramind_dev_password}@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/3
+      JWT_SECRET: ${JWT_SECRET}
+      EVENT_SIGNING_SECRET: ${EVENT_SIGNING_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://localhost:8443}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    # Sem `ports:` — acessível apenas via Nginx.
+    expose:
+      - "8004"
+    networks:
+      - terramind-net
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: terramind-nginx
+    restart: unless-stopped
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/certs:/etc/nginx/certs:ro
+    ports:
+      - "8443:8443"
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - farm-service
+      - sensor-service
+      - alert-service
+    networks:
+      - terramind-net
+
+volumes:
+  pgdata:
+
+networks:
+  terramind-net:
+    driver: bridge

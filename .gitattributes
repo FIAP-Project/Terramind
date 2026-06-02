@@ -1,0 +1,33 @@
+# Default: normalize line endings to LF on commit
+* text=auto eol=lf
+
+# Code: always LF
+*.py text eol=lf
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.cfg text eol=lf
+*.ini text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
+*.conf text eol=lf
+*.env text eol=lf
+Dockerfile text eol=lf
+Makefile text eol=lf
+
+# Windows-only files
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+
+# Binaries
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.key binary
+*.pem binary
+*.crt binary
