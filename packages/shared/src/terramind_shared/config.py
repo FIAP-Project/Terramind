@@ -6,10 +6,10 @@ Os valores são lidos de variáveis de ambiente (via Pydantic Settings).
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class BaseServiceSettings(BaseSettings):
@@ -56,7 +56,9 @@ class BaseServiceSettings(BaseSettings):
     refresh_token_ttl_days: int = 7
 
     # HTTP / CORS
-    cors_allowed_origins: list[str] = Field(default_factory=lambda: ["https://localhost:8443"])
+    cors_allowed_origins: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["https://localhost:8443"]
+    )
 
     @field_validator("cors_allowed_origins", mode="before")
     @classmethod

@@ -63,6 +63,7 @@ Diagrama detalhado em [`docs/architecture.md`](docs/architecture.md).
 - **Banco**: PostgreSQL 16 (CITEXT + UUID + pgcrypto) com schemas isolados por serviço
 - **Gateway**: Nginx 1.27 com TLS 1.2+, rate limiting e security headers
 - **Workspace**: uv (workspace única com `packages/*` e `services/*`)
+- **Task runner**: `python scripts/tasks.py` (cross-platform)
 
 ---
 
@@ -70,8 +71,7 @@ Diagrama detalhado em [`docs/architecture.md`](docs/architecture.md).
 
 ### Pré-requisitos
 - Docker Desktop 4.x ou Docker Engine + Compose v2
-- `make` (já vem no macOS/Linux)
-- (opcional) `mkcert` para gerar TLS de dev: `brew install mkcert`
+- `mkcert` para gerar TLS de dev: `brew install mkcert`
 
 ### Passos
 
@@ -80,10 +80,10 @@ Diagrama detalhado em [`docs/architecture.md`](docs/architecture.md).
 cp .env.example .env
 
 # 2. Gere certificados TLS para o gateway local
-make certs
+python scripts/tasks.py certs
 
 # 3. Suba todo o stack
-make up
+python scripts/tasks.py up
 
 # 4. Em outro terminal, popule dados demo
 python scripts/seed.py
@@ -102,13 +102,13 @@ Acesse os Swaggers:
 
 Outros comandos:
 ```bash
-make logs       # logs em tempo real
-make ps         # status dos containers
-make test       # roda pytest
-make fmt        # ruff format
-make lint       # ruff check
-make down       # derruba o stack
-make clean      # remove volumes e caches
+python scripts/tasks.py logs      # logs em tempo real
+python scripts/tasks.py ps        # status dos containers
+python scripts/tasks.py test      # roda pytest
+python scripts/tasks.py fmt       # ruff format
+python scripts/tasks.py lint      # ruff check
+python scripts/tasks.py down      # derruba o stack
+python scripts/tasks.py clean     # remove volumes e caches
 ```
 
 ---
@@ -120,7 +120,7 @@ make clean      # remove volumes e caches
 - **Python 3.12+** ([python.org](https://www.python.org/downloads/) — durante a instalação, marque "Add python.exe to PATH")
 - **uv** (gerenciador Python): `pip install uv` ou `irm https://astral.sh/uv/install.ps1 | iex`
 - **Git for Windows** (já configura line endings corretos via `.gitattributes` do projeto)
-- (opcional) `mkcert` via Chocolatey: `choco install mkcert`
+- `mkcert` via Winget: `winget install -e --id FiloSottile.mkcert --accept-package-agreements --accept-source-agreements`
 
 ### Passos no PowerShell
 
@@ -129,10 +129,10 @@ make clean      # remove volumes e caches
 Copy-Item .env.example .env
 
 # 2. Gere certificados TLS de dev
-.\tasks.ps1 certs
+python scripts\tasks.py certs
 
 # 3. Suba todo o stack
-.\tasks.ps1 up
+python scripts\tasks.py up
 
 # 4. Em outro PowerShell, popule dados demo
 python scripts\seed.py
@@ -141,14 +141,12 @@ python scripts\seed.py
 python scripts\simulate_readings.py --interval 3 --cycles 30
 ```
 
-> **Alternativa cross-platform**: `python scripts\tasks.py up` funciona igual ao Makefile no Linux. Útil se o PowerShell não estiver disponível.
-
 Demais comandos:
 ```powershell
-.\tasks.ps1 logs       # ou: python scripts\tasks.py logs
-.\tasks.ps1 test       #     python scripts\tasks.py test
-.\tasks.ps1 down       #     python scripts\tasks.py down
-.\tasks.ps1 clean      #     python scripts\tasks.py clean
+python scripts\tasks.py logs
+python scripts\tasks.py test
+python scripts\tasks.py down
+python scripts\tasks.py clean
 ```
 
 ### Notas Windows-específicas
@@ -191,7 +189,7 @@ Formato unificado de erro:
 
 ```bash
 # 1. Sobe o stack e popula demo
-make up && python scripts/seed.py
+python scripts/tasks.py up && python scripts/seed.py
 
 # 2. Inicia simulador de leituras (background)
 python scripts/simulate_readings.py --interval 2 --cycles 30 &
@@ -235,8 +233,6 @@ Terramind/
 │   ├── seed.py          # dados demo
 │   └── simulate_readings.py
 ├── docker-compose.yml
-├── Makefile             # macOS / Linux
-├── tasks.ps1            # Windows PowerShell
 └── pyproject.toml       # workspace uv
 ```
 
