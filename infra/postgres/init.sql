@@ -10,5 +10,5 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- mas garantimos a existência aqui também para evitar race conditions).
 CREATE SCHEMA IF NOT EXISTS auth;
 CREATE SCHEMA IF NOT EXISTS farm;
-CREATE SCHEMA IF NOT EXISTS sensor;
+CREATE SCHEMA IF NOT EXISTS satellite;
 CREATE SCHEMA IF NOT EXISTS alert;

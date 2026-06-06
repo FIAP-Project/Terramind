@@ -1,4 +1,4 @@
-"""Consumer de eventos `sensor.reading.recorded` que dispara o rule engine."""
+"""Consumer de eventos `satellite.reading.recorded` que dispara o rule engine."""
 
 from __future__ import annotations
 
@@ -22,9 +22,9 @@ def make_handler(database, rule_engine, event_bus: EventBus):  # noqa: ANN001
     async def handle(envelope: EventEnvelope) -> None:
         payload = envelope.payload
         try:
-            sensor_id = UUID(payload["sensor_id"])
+            satellite_id = UUID(payload["satellite_id"])
             plot_id = UUID(payload["plot_id"])
-            sensor_type = str(payload["sensor_type"])
+            satellite_type = str(payload["satellite_type"])
             value = float(payload["value"])
             unit = str(payload["unit"])
             from datetime import datetime
@@ -42,8 +42,8 @@ def make_handler(database, rule_engine, event_bus: EventBus):  # noqa: ANN001
             )
             await svc.process_reading(
                 plot_id=plot_id,
-                sensor_id=sensor_id,
-                sensor_type=sensor_type,
+                satellite_id=satellite_id,
+                satellite_type=satellite_type,
                 value=value,
                 unit=unit,
                 captured_at=captured_at,
@@ -57,7 +57,7 @@ async def start_consumer(app) -> None:  # noqa: ANN001
     handler = make_handler(app.state.database, app.state.rule_engine, bus)
     await bus.subscribe(
         queue_name="alert-service.readings",
-        routing_keys=[EventType.SENSOR_READING_RECORDED.value],
+        routing_keys=[EventType.SATELLITE_READING_RECORDED.value],
         handler=handler,
     )
     logger.info("alert-service consumer ready")

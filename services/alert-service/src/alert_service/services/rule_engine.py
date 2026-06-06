@@ -1,6 +1,6 @@
 """Motor de regras para gerar alertas a partir de leituras.
 
-Versão MVP: regras hardcoded por tipo de sensor com limiares de fallback.
+Versão MVP: regras hardcoded por tipo de satellite com limiares de fallback.
 Em produção evoluiria para regras dinâmicas associadas a Crop específica.
 """
 
@@ -32,15 +32,15 @@ class RuleEngine:
     def evaluate(
         self,
         *,
-        sensor_type: str,
+        satellite_type: str,
         value: float,
         unit: str,
     ) -> RuleResult:
-        if sensor_type == "soil_moisture":
+        if satellite_type == "soil_moisture":
             return self._evaluate_humidity(value)
-        if sensor_type == "temperature":
+        if satellite_type == "temperature":
             return self._evaluate_temperature(value)
-        if sensor_type == "rainfall":
+        if satellite_type == "rainfall":
             return self._evaluate_rainfall(value, unit)
         return RuleResult(triggered=False, severity="info", rule_id="noop", message="no rule")
 

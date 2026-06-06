@@ -16,18 +16,18 @@ O Postgres aceita ~100 conexões por padrão, e cada serviço já consome até 3
   por conexão a milissegundos;
 - **Read replicas** para queries de listagem (`GET /alert/alerts`, séries
   temporais de readings);
-- **Particionamento** da tabela `sensor.readings` por mês — a tabela cresce
-  ~1 linha por minuto por sensor (~525k/ano por sensor), insustentável para
+- **Particionamento** da tabela `satellite.readings` por mês — a tabela cresce
+  ~1 linha por minuto por satellite (~525k/ano por satellite), insustentável para
   queries com `ORDER BY captured_at DESC` sem partição.
 
-### Ingestão de leituras (sensor-service)
-Com 10.000 sensores enviando uma leitura por minuto = ~166 req/s — viável,
-mas tendo picos de 10× durante ressincronização (sensor que ficou offline
+### Ingestão de leituras (satellite-service)
+Com 10.000 satellitees enviando uma leitura por minuto = ~166 req/s — viável,
+mas tendo picos de 10× durante ressincronização (satellite que ficou offline
 e despeja buffer). **Soluções:**
-- **Horizontal scaling** do sensor-service (FastAPI é stateless, basta
+- **Horizontal scaling** do satellite-service (FastAPI é stateless, basta
   aumentar `replicas` no compose ou no k8s);
-- Trocar `POST /readings` síncrono por **ingestão via fila** (sensor publica
-  direto no RabbitMQ, sensor-service consome em batch e persiste com
+- Trocar `POST /readings` síncrono por **ingestão via fila** (satélite publica
+  direto no RabbitMQ, satellite-service consome em batch e persiste com
   `COPY` em vez de INSERT individual).
 
 ### Barramento de eventos (RabbitMQ)
@@ -77,7 +77,7 @@ Migrar para HashiCorp Vault, AWS Secrets Manager ou Azure Key Vault
 permite rotação programada e auditoria de acesso a segredos.
 
 ### 4. Particionamento e retenção de leituras
-A tabela `sensor.readings` cresce indefinidamente. Soluções:
+A tabela `satellite.readings` cresce indefinidamente. Soluções:
 - **Particionamento por mês** (PG 16 suporta DECLARATIVE PARTITION);
 - **Política de retenção**: manter últimos 90 dias quentes, mover o
   restante para data lake (S3 + Parquet);
@@ -97,7 +97,7 @@ Tempo/Jaeger.
 
 ### 7. Idempotência na ingestão
 `POST /readings` deveria aceitar um `Idempotency-Key` header. Hoje, se
-um sensor retransmitir a mesma leitura por falha de rede, criamos duplicata.
+um satellite retransmitir a mesma leitura por falha de rede, criamos duplicata.
 
 ### 8. Backups e DR
 Em produção: snapshots automáticos do volume Postgres (3× ao dia, retenção
@@ -135,7 +135,7 @@ O banco único é o ponto de não-escalabilidade horizontal. Caminhos:
 - **Sharding por tenant** (produtor): cada shard contém todas as fazendas
   de um conjunto de produtores. `farm_id` carrega prefixo de shard;
 - **CockroachDB / YugabyteDB** quando o sharding manual ficar caro;
-- **TimescaleDB** especificamente para `sensor.readings` — otimizado para
+- **TimescaleDB** especificamente para `satellite.readings` — otimizado para
   séries temporais, suporta compressão e particionamento automático.
 
 ### Camada 3 — Mensageria escalável
@@ -157,7 +157,7 @@ Separar comandos (writes) dos queries (reads):
 ### Camada 5 — Service mesh
 Com 4+ serviços em produção, **Istio** ou **Linkerd** adicionam:
 - mTLS automático entre serviços (substitui parcialmente o HMAC dos eventos);
-- Circuit breakers (alert-service não derruba sensor-service se travar);
+- Circuit breakers (alert-service não derruba satellite-service se travar);
 - Retries com backoff;
 - Traces distribuídos automaticamente;
 - Canary deploys.
@@ -171,8 +171,8 @@ Para produtores no Norte e no Sul do Brasil:
 - **Geo-routing** no DNS (Route 53 latency-based) para roteamento à região
   mais próxima.
 
-### Camada 7 — Edge processing nos sensores
-Em vez de cada leitura virar um POST HTTP, sensores publicariam via **MQTT**
+### Camada 7 — Edge processing nos satellitees
+Em vez de cada leitura virar um POST HTTP, satellitees publicariam via **MQTT**
 para um broker regional (HiveMQ, EMQX). Um adapter MQTT→HTTP/Kafka faria a
 ponte. Vantagem: protocolo desenhado para IoT (QoS, offline buffering, baixo
 consumo de bateria).

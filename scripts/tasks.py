@@ -74,7 +74,7 @@ def cmd_up() -> int:
             "\nAguarde alguns segundos e acesse:\n"
             "  Swagger auth:   https://localhost:8443/auth/docs\n"
             "  Swagger farm:   https://localhost:8443/farm/docs\n"
-            "  Swagger sensor: https://localhost:8443/sensor/docs\n"
+            "  Swagger satellite: https://localhost:8443/satellite/docs\n"
             "  Swagger alert:  https://localhost:8443/alert/docs"
         )
     return rc

@@ -20,7 +20,7 @@ class AlertOut(BaseModel):
 
     id: UUID
     plot_id: UUID
-    sensor_id: UUID
+    satellite_id: UUID
     severity: Severity
     rule_id: str
     message: str

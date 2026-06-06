@@ -60,19 +60,19 @@ class AlertService:
         self,
         *,
         plot_id: UUID,
-        sensor_id: UUID,
-        sensor_type: str,
+        satellite_id: UUID,
+        satellite_type: str,
         value: float,
         unit: str,
         captured_at: datetime,
     ) -> Alert | None:
         """Avalia uma leitura. Se a regra dispara, cria Alert e publica evento."""
-        result = self._engine.evaluate(sensor_type=sensor_type, value=value, unit=unit)
+        result = self._engine.evaluate(satellite_type=satellite_type, value=value, unit=unit)
         if not result.triggered:
             return None
         alert = await self._alerts.create(
             plot_id=plot_id,
-            sensor_id=sensor_id,
+            satellite_id=satellite_id,
             severity=result.severity,
             rule_id=result.rule_id,
             message=result.message,

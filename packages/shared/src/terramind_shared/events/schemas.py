@@ -13,7 +13,7 @@ class EventType(StrEnum):
     USER_REGISTERED = "user.registered"
     USER_LOGGED_IN = "user.logged_in"
     AUTH_FAILED = "auth.failed"
-    SENSOR_READING_RECORDED = "sensor.reading.recorded"
+    SATELLITE_READING_RECORDED = "satellite.reading.recorded"
     ALERT_TRIGGERED = "alert.triggered"
     ALERT_RESOLVED = "alert.resolved"
 
@@ -54,13 +54,13 @@ class AuthFailedEvent(BaseEvent):
     reason: str
 
 
-# --- Sensors ---
+# --- Satellites ---
 
-class SensorReadingRecordedEvent(BaseEvent):
-    event_type: EventType = EventType.SENSOR_READING_RECORDED
-    sensor_id: str
+class SatelliteReadingRecordedEvent(BaseEvent):
+    event_type: EventType = EventType.SATELLITE_READING_RECORDED
+    satellite_id: str
     plot_id: str
-    sensor_type: str
+    satellite_type: str
     value: float
     unit: str
     captured_at: datetime

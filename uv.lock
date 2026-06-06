@@ -7,7 +7,7 @@ members = [
     "alert-service",
     "auth-service",
     "farm-service",
-    "sensor-service",
+    "satellite-service",
     "terramind",
     "terramind-shared",
 ]
@@ -1227,9 +1227,9 @@ wheels = [
 ]
 
 [[package]]
-name = "sensor-service"
+name = "satellite-service"
 version = "0.1.0"
-source = { editable = "services/sensor-service" }
+source = { editable = "services/satellite-service" }
 dependencies = [
     { name = "aio-pika" },
     { name = "alembic" },

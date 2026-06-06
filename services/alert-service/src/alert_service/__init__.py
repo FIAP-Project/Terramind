@@ -1,1 +1,1 @@
-"""alert-service: regras + alertas baseados em leituras de sensores."""
+"""alert-service: regras + alertas baseados em leituras de satellites."""

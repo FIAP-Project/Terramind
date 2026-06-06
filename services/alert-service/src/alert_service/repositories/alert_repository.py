@@ -44,7 +44,7 @@ class AlertRepository:
         self,
         *,
         plot_id: UUID,
-        sensor_id: UUID,
+        satellite_id: UUID,
         severity: str,
         rule_id: str,
         message: str,
@@ -52,7 +52,7 @@ class AlertRepository:
     ) -> Alert:
         alert = Alert(
             plot_id=plot_id,
-            sensor_id=sensor_id,
+            satellite_id=satellite_id,
             severity=severity,
             rule_id=rule_id,
             message=message,

@@ -120,18 +120,18 @@ services:
     networks:
       - terramind-net
 
-  sensor-service:
+  satellite-service:
     build:
       context: .
-      dockerfile: services/sensor-service/Dockerfile
-    container_name: terramind-sensor
+      dockerfile: services/satellite-service/Dockerfile
+    container_name: terramind-satellite
     restart: unless-stopped
     environment:
-      SERVICE_NAME: sensor-service
+      SERVICE_NAME: satellite-service
       ENVIRONMENT: ${ENVIRONMENT:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-terramind}:${POSTGRES_PASSWORD:-terramind_dev_password}@postgres:5432/${POSTGRES_DB:-terramind}
-      DB_SCHEMA: sensor
+      DB_SCHEMA: satellite
       AMQP_URL: amqp://${RABBITMQ_USER:-terramind}:${RABBITMQ_PASSWORD:-terramind_dev_password}@rabbitmq:5672/
       REDIS_URL: redis://redis:6379/2
       JWT_SECRET: ${JWT_SECRET}
@@ -189,7 +189,7 @@ services:
     depends_on:
       - auth-service
       - farm-service
-      - sensor-service
+      - satellite-service
       - alert-service
     networks:
       - terramind-net

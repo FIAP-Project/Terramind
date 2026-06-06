@@ -17,7 +17,7 @@ class Alert(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __table_args__ = {"schema": "alert"}
 
     plot_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), index=True, nullable=False)
-    sensor_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), index=True, nullable=False)
+    satellite_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), index=True, nullable=False)
     severity: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
     rule_id: Mapped[str] = mapped_column(String(64), nullable=False)
     message: Mapped[str] = mapped_column(String(255), nullable=False)

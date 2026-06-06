@@ -1,4 +1,4 @@
-"""Seed inicial: cria usuário admin, fazenda demo, talhão e sensor.
+"""Seed inicial: cria usuário admin, fazenda demo, talhão e satélite.
 
 Uso:
     python scripts/seed.py
@@ -54,19 +54,19 @@ def find_plot_id(
     return None
 
 
-def find_sensor_id(
+def find_satellite_id(
     client: httpx.Client,
     headers: dict[str, str],
     *,
     serial_number: str,
 ) -> str | None:
-    r = client.get(url("/sensor/sensors"), headers=headers)
+    r = client.get(url("/satellite/satellites"), headers=headers)
     if r.status_code != 200:
-        print(f"sensor list failed: {r.status_code} {r.text}", file=sys.stderr)
+        print(f"satellite list failed: {r.status_code} {r.text}", file=sys.stderr)
         return None
-    for sensor in r.json():
-        if sensor.get("serial_number") == serial_number:
-            return sensor["id"]
+    for satellite in r.json():
+        if satellite.get("serial_number") == serial_number:
+            return satellite["id"]
     return None
 
 
@@ -147,31 +147,31 @@ def main() -> int:
         else:
             print(f"plot reused: {plot_id}")
 
-        # Cria sensores
+        # Cria satélites
         for stype, serial in (("soil_moisture", "SM-001"), ("temperature", "T-001")):
-            sensor_id = find_sensor_id(
+            satellite_id = find_satellite_id(
                 client,
                 headers,
                 serial_number=serial,
             )
-            if sensor_id is not None:
-                print(f"sensor {stype} reused: {sensor_id}")
+            if satellite_id is not None:
+                print(f"satellite {stype} reused: {satellite_id}")
                 continue
             r = client.post(
-                url("/sensor/sensors"),
+                url("/satellite/satellites"),
                 json={
                     "plot_id": plot_id,
                     "type": stype,
                     "serial_number": serial,
                     "status": "active",
-                    "description": f"Sensor {stype} demo",
+                    "description": f"Satellite {stype} demo",
                 },
                 headers=headers,
             )
             if r.status_code != 201:
-                print(f"sensor create failed: {r.status_code} {r.text}", file=sys.stderr)
+                print(f"satellite create failed: {r.status_code} {r.text}", file=sys.stderr)
                 return 1
-            print(f"sensor {stype} created: {r.json()['id']}")
+            print(f"satellite {stype} created: {r.json()['id']}")
 
         print("\nseed concluído. credenciais:")
         print(f"  email:    {ADMIN_EMAIL}")

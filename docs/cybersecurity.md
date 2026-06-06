@@ -18,15 +18,15 @@
 
 | Ativo | Tipo | Criticidade | Notas |
 |---|---|---|---|
-| Banco PostgreSQL (schemas `auth`, `farm`, `sensor`, `alert`) | Dado | **Crítica** | Contém: emails, hashes de senha, coordenadas GPS de propriedades, histórico de leituras. |
+| Banco PostgreSQL (schemas `auth`, `farm`, `satellite`, `alert`) | Dado | **Crítica** | Contém: emails, hashes de senha, coordenadas GPS de propriedades, histórico de leituras. |
 | Tokens JWT (access + refresh) | Credencial | **Crítica** | Acesso direto aos endpoints autenticados. |
 | Segredo `JWT_SECRET` | Segredo | **Crítica** | Comprometimento → forjar JWT arbitrário. |
 | Segredo `EVENT_SIGNING_SECRET` | Segredo | Alta | Comprometimento → forjar eventos no RabbitMQ. |
 | Credenciais Postgres / RabbitMQ | Segredo | Alta | Comprometimento → acesso direto a banco e fila. |
 | Stream de eventos no RabbitMQ | Dado | Alta | Telemetria em trânsito; assinada com HMAC. |
 | Endpoint público `/auth/login` e `/auth/register` | Superfície | Alta | Alvo de força bruta e enumeração. |
-| Endpoint `/sensor/sensors/{id}/readings` | Superfície | Alta | Alvo de injeção de leituras falsas. |
-| Sensores IoT físicos (futuro) | Dispositivo | Média | Hoje simulados; em produção precisam de mTLS ou API Key dedicada. |
+| Endpoint `/satellite/satellites/{id}/readings` | Superfície | Alta | Alvo de injeção de leituras falsas. |
+| satellitees IoT físicos (futuro) | Dispositivo | Média | Hoje simulados; em produção precisam de mTLS ou API Key dedicada. |
 | Logs aplicacionais com `request_id` | Dado de auditoria | Média | Fonte de detecção de incidentes. |
 | Certificados TLS | Segredo | Alta | Em produção, rotacionados via ACME. |
 
@@ -35,21 +35,21 @@
 Modelo **STRIDE** aplicado à solução. Listamos quatro vetores de ataque
 plausíveis (o PDF exige no mínimo três):
 
-#### Ameaça 1 — Spoofing: Falsificação de leituras de sensores
+#### Ameaça 1 — Spoofing: Falsificação de leituras de satellitees
 
-- **Cenário**: atacante descobre `serial_number` de um sensor e envia leituras
-  forjadas via `POST /sensor/sensors/{id}/readings`.
+- **Cenário**: atacante descobre `serial_number` de um satellite e envia leituras
+  forjadas via `POST /satellite/satellites/{id}/readings`.
 - **Impacto**: alertas falsos confundem o produtor, suprimem alertas reais ou
   travam ações operacionais.
 - **Mitigações implementadas**:
   - Endpoint exige `Authorization: Bearer <access_token>` válido;
-  - Em produção: API Key dedicada por sensor + assinatura HMAC do payload;
+  - Em produção: API Key dedicada por satellite + assinatura HMAC do payload;
   - Rate limit no Nginx (30 req/s global) impede flooding.
 
 #### Ameaça 2 — Tampering: Adulteração de eventos no barramento
 
 - **Cenário**: invasor com acesso à rede interna (lateral movement) publica
-  eventos `sensor.reading.recorded` ou `alert.resolved` forjados no RabbitMQ.
+  eventos `satellite.reading.recorded` ou `alert.resolved` forjados no RabbitMQ.
 - **Impacto**: alertas spam ou alertas reais marcados como resolvidos
   silenciosamente.
 - **Mitigações implementadas**:
@@ -61,7 +61,7 @@ plausíveis (o PDF exige no mínimo três):
 
 #### Ameaça 3 — Denial of Service: Flood na ingestão ou no login
 
-- **Cenário**: bot envia milhares de POSTs em `/sensor/.../readings` ou
+- **Cenário**: bot envia milhares de POSTs em `/satellite/.../readings` ou
   tentativas de senha em `/auth/login` para esgotar conexões do banco ou
   travar o autenticador.
 - **Impacto**: indisponibilidade da plataforma; perda de leituras legítimas.
@@ -142,7 +142,7 @@ plausíveis (o PDF exige no mínimo três):
   - `Content-Security-Policy` com `default-src 'self'`;
 - Os mesmos headers são aplicados também no `SecurityHeadersMiddleware` de
   cada serviço, como defesa em profundidade caso o gateway seja bypassado;
-- **Network isolation**: os 4 serviços de aplicação (`auth`, `farm`, `sensor`,
+- **Network isolation**: os 4 serviços de aplicação (`auth`, `farm`, `satellite`,
   `alert`) **não publicam portas** ao host — usam apenas `expose:` para a rede
   interna `terramind-net` e só são alcançáveis via Nginx (porta 8443/8080).
   Postgres, RabbitMQ e Redis publicam portas apenas em `127.0.0.1` (loopback),
@@ -262,8 +262,8 @@ docker compose restart auth-service
 
 ```sql
 -- 5. Se vetor for leitura forjada: pausar ingestão temporariamente
--- (alternativa: mudar status do sensor para "maintenance")
-UPDATE sensor.sensors SET status = 'maintenance' WHERE id IN (...);
+-- (alternativa: mudar status do satellite para "maintenance")
+UPDATE satellite.satellites SET status = 'maintenance' WHERE id IN (...);
 ```
 
 ### 4.4 Erradicação (T+1 h)
@@ -291,7 +291,7 @@ Restauração do serviço a estado limpo:
 2. **Validação de integridade**:
    - Conferir contagem de leituras esperada vs presente;
    - Verificar que assinaturas HMAC de eventos arquivados batem;
-3. **Re-enable de ingestão**: voltar sensores para `status=active`;
+3. **Re-enable de ingestão**: voltar satellitees para `status=active`;
 4. **Comunicação aos usuários**:
    - Email/in-app aos produtores afetados (LGPD art. 48 — em até 72h);
    - Notificação à ANPD se houver tratamento de dado pessoal comprometido;

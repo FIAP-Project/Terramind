@@ -13,21 +13,21 @@ A perda de produtividade na agricultura é causada principalmente por:
 - **Detecção tardia** de qualquer um dos itens acima, pois a verificação manual
   em propriedades de centenas de hectares é lenta.
 
-Sensores IoT já são viáveis comercialmente, mas a coleta sem um backend
+Satellites IoT já são viáveis comercialmente, mas a coleta sem um backend
 que reaja em tempo real às leituras gera apenas planilhas — não decisões.
 
 ## 2. Objetivo da solução
 
 Construir um backend de **monitoramento agrícola** que:
 
-1. Receba leituras de sensores via API REST;
+1. Receba leituras de satellites via API REST;
 2. Mantenha catálogo estruturado de fazendas, talhões e culturas;
 3. Avalie cada leitura contra os limites ótimos da cultura plantada;
 4. Gere alertas com severidade (info/warning/critical) e os disponibilize
    para consulta com filtros (por talhão, severidade, resolvido ou não);
 5. Mantenha rastreabilidade ponta a ponta para auditoria (LGPD, ISO 27001).
 
-A solução é **agnóstica do hardware do sensor**: qualquer dispositivo capaz de
+A solução é **agnóstica do hardware do satélite**: qualquer dispositivo capaz de
 fazer um `POST` HTTP autenticado é compatível. O `scripts/simulate_readings.py`
 demonstra essa interface.
 
@@ -37,7 +37,7 @@ demonstra essa interface.
 flowchart LR
     subgraph clients[Clientes]
         UI[App / Dashboard]
-        IOT[Sensores IoT]
+        IOT[Satélites]
         SIM[simulate_readings.py]
     end
 
@@ -48,12 +48,12 @@ flowchart LR
     subgraph services[Microsserviços]
         AUTH[auth-service<br/>8001]
         FARM[farm-service<br/>8002]
-        SENS[sensor-service<br/>8003]
+        SENS[satellite-service<br/>8003]
         ALRT[alert-service<br/>8004]
     end
 
     subgraph infra[Infra]
-        PG[(PostgreSQL 16<br/>schemas: auth, farm,<br/>sensor, alert)]
+        PG[(PostgreSQL 16<br/>schemas: auth, farm,<br/>satellite, alert)]
         MQ[[RabbitMQ<br/>terramind.events<br/>topic exchange]]
         RD[(Redis<br/>rate limit)]
     end
@@ -112,17 +112,17 @@ CRUD de três entidades relacionadas:
 
 Seed inicial contém: milho, soja, café, cana, algodão.
 
-### 4.4 sensor-service (porta 8003)
+### 4.4 satellite-service (porta 8003)
 
-- CRUD de Sensors (tipos: `soil_moisture`, `temperature`, `rainfall`, `npk`);
-- Ingestão de Readings via `POST /sensor/sensors/{id}/readings`;
-- A cada Reading persistida, publica `sensor.reading.recorded` no barramento;
+- CRUD de Satellites (tipos: `soil_moisture`, `temperature`, `rainfall`, `npk`);
+- Ingestão de Readings via `POST /satellite/satellites/{id}/readings`;
+- A cada Reading persistida, publica `satellite.reading.recorded` no barramento;
 - Consulta histórica com filtro `since` para construção de séries temporais.
 
 ### 4.5 alert-service (porta 8004)
 
-- Consumer durável de `sensor.reading.recorded` (queue `alert-service.readings`);
-- Cada leitura passa pelo `RuleEngine` com **regras globais por tipo de sensor**
+- Consumer durável de `satellite.reading.recorded` (queue `alert-service.readings`);
+- Cada leitura passa pelo `RuleEngine` com **regras globais por tipo de satélite**
   (umidade do solo, temperatura, pluviometria) cujos limiares vêm do `Settings`
   do serviço (env vars `FALLBACK_HUMIDITY_MIN/MAX`, `FALLBACK_TEMP_MIN/MAX`).
   Os valores atuais cobrem o envelope ótimo das culturas brasileiras de pequeno
@@ -154,7 +154,7 @@ Biblioteca compartilhada por todos os serviços. Concentra:
 ### 4.7 PostgreSQL
 
 - Versão 16 com extensões `citext`, `uuid-ossp` e `pgcrypto`;
-- **Um banco, quatro schemas**: `auth`, `farm`, `sensor`, `alert`. Cada serviço
+- **Um banco, quatro schemas**: `auth`, `farm`, `satellite`, `alert`. Cada serviço
   só vê o seu próprio schema; a alembic table fica nesse mesmo schema.
 - Migrations gerenciadas independentemente por cada serviço via Alembic async.
 
@@ -180,14 +180,14 @@ infraestrutura, sem dependência forte ainda.
 2. POST /auth/login              → retorna { access_token, refresh_token }
 3. POST /farm/farms              → cria fazenda (owner_user_id derivado do JWT)
 4. POST /farm/plots              → cria talhão associando uma Crop
-5. POST /sensor/sensors          → instala sensor no talhão
+5. POST /satellite/satellites    → instala satélite no talhão
 ```
 
 ### 5.2 Operação contínua (ingestão e alertas)
 
 ```
-1. Sensor → POST /sensor/sensors/{id}/readings
-2. sensor-service persiste Reading e publica `sensor.reading.recorded`
+1. Satélite → POST /satellite/satellites/{id}/readings
+2. satellite-service persiste Reading e publica `satellite.reading.recorded`
 3. alert-service consome o evento, aplica regra e — se dispara — cria Alert
 4. alert-service publica `alert.triggered`
 5. Cliente consulta GET /alert/alerts?plot_id=...&resolved=false
@@ -219,7 +219,7 @@ Princípios:
 
 | Decisão | Por quê |
 |---|---|
-| Microsserviços por subdomínio | Tema da matéria (SOA). Permite escalar `sensor-service` independentemente quando o volume de ingestão crescer. |
+| Microsserviços por subdomínio | Tema da matéria (SOA). Permite escalar `satellite-service` independentemente quando o volume de ingestão crescer. |
 | FastAPI + Pydantic 2 | Tipagem forte, Swagger gratuito, async-first (essencial para alto volume de leituras). |
 | uv workspace | Um único `uv sync` resolve todo o monorepo; cada serviço pode rodar isolado em Docker. |
 | Schemas Postgres isolados por serviço | Defesa em profundidade contra acoplamento de dados entre serviços, mantendo um único banco para simplificar a operação acadêmica. |

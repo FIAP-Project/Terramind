@@ -1,9 +1,9 @@
-"""Simula leituras de sensores enviando POSTs para o sensor-service.
+"""Simula leituras de satélites enviando POSTs para o satellite-service.
 
 Uso:
     python scripts/simulate_readings.py [--interval 5] [--cycles 20]
 
-Login com admin, lista sensores ativos e envia leituras com pequenas
+Login com admin, lista satélites ativos e envia leituras com pequenas
 oscilações em torno do limite — alguns valores fora da faixa para
 demonstrar a geração de alertas pelo alert-service.
 """
@@ -29,12 +29,12 @@ def url(path: str) -> str:
     return urljoin(BASE_URL.rstrip("/") + "/", path.lstrip("/"))
 
 
-def value_for(sensor_type: str) -> tuple[float, str]:
-    if sensor_type == "soil_moisture":
+def value_for(satellite_type: str) -> tuple[float, str]:
+    if satellite_type == "soil_moisture":
         return round(random.uniform(20.0, 90.0), 2), "pct"
-    if sensor_type == "temperature":
+    if satellite_type == "temperature":
         return round(random.uniform(0.0, 45.0), 2), "celsius"
-    if sensor_type == "rainfall":
+    if satellite_type == "rainfall":
         return round(random.uniform(0.0, 120.0), 2), "mm"
     return round(random.uniform(0.0, 100.0), 2), "unit"
 
@@ -56,31 +56,31 @@ def main() -> int:
         token = r.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        r = client.get(url("/sensor/sensors"), headers=headers)
-        sensors = [s for s in r.json() if s.get("status") == "active"]
-        if not sensors:
-            print("nenhum sensor ativo. rode `python scripts/seed.py` antes.", file=sys.stderr)
+        r = client.get(url("/satellite/satellites"), headers=headers)
+        satellites = [s for s in r.json() if s.get("status") == "active"]
+        if not satellites:
+            print("nenhum satélite ativo. rode `python scripts/seed.py` antes.", file=sys.stderr)
             return 1
 
-        print(f"simulando {args.cycles} rodadas em {len(sensors)} sensores")
+        print(f"simulando {args.cycles} rodadas em {len(satellites)} satélites")
 
         for cycle in range(1, args.cycles + 1):
-            for sensor in sensors:
-                value, unit = value_for(sensor["type"])
+            for satellite in satellites:
+                value, unit = value_for(satellite["type"])
                 payload = {
                     "value": value,
                     "unit": unit,
                     "captured_at": datetime.now(UTC).isoformat(),
                 }
                 r = client.post(
-                    url(f"/sensor/sensors/{sensor['id']}/readings"),
+                    url(f"/satellite/satellites/{satellite['id']}/readings"),
                     json=payload,
                     headers=headers,
                 )
                 status = "ok" if r.status_code == 201 else f"err {r.status_code}"
                 print(
-                    f"cycle={cycle:02d} sensor={sensor['serial_number']} "
-                    f"type={sensor['type']} value={value} {unit} → {status}"
+                    f"cycle={cycle:02d} satellite={satellite['serial_number']} "
+                    f"type={satellite['type']} value={value} {unit} → {status}"
                 )
             if cycle < args.cycles:
                 time.sleep(args.interval)

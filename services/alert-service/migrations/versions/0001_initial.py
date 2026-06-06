@@ -24,7 +24,7 @@ def upgrade() -> None:
         "alerts",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("plot_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("sensor_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("satellite_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("severity", sa.String(length=16), nullable=False),
         sa.Column("rule_id", sa.String(length=64), nullable=False),
         sa.Column("message", sa.String(length=255), nullable=False),
@@ -35,12 +35,12 @@ def upgrade() -> None:
         schema="alert",
     )
     op.create_index("ix_alerts_plot_id", "alerts", ["plot_id"], schema="alert")
-    op.create_index("ix_alerts_sensor_id", "alerts", ["sensor_id"], schema="alert")
+    op.create_index("ix_alerts_satellite_id", "alerts", ["satellite_id"], schema="alert")
     op.create_index("ix_alerts_severity", "alerts", ["severity"], schema="alert")
 
 
 def downgrade() -> None:
     op.drop_index("ix_alerts_severity", table_name="alerts", schema="alert")
-    op.drop_index("ix_alerts_sensor_id", table_name="alerts", schema="alert")
+    op.drop_index("ix_alerts_satellite_id", table_name="alerts", schema="alert")
     op.drop_index("ix_alerts_plot_id", table_name="alerts", schema="alert")
     op.drop_table("alerts", schema="alert")

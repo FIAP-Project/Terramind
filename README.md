@@ -3,7 +3,7 @@
 > **FIAP — 3ESPY — Global Solution 2026/1 — ODS 9 (Indústria, Inovação e Infraestrutura)**
 > Tema: *Sistema de agricultura inteligente — monitoramento de produtividade e redução de perdas*
 
-Backend distribuído em microsserviços para coletar leituras de sensores
+Backend distribuído em microsserviços para coletar leituras de satélites
 agrícolas (umidade do solo, temperatura, pluviometria), analisá-las contra
 limites ideais por cultura e gerar alertas quando há risco de perda de
 produtividade.
@@ -45,20 +45,20 @@ produtividade.
                     └────────┬─────────┘
             ┌────────────────┼─────────────────┬──────────────┐
             ▼                ▼                 ▼              ▼
-       auth-svc         farm-svc          sensor-svc      alert-svc
+       auth-svc         farm-svc         satellite-svc    alert-svc
        (8001)           (8002)            (8003)          (8004)
             │                │                 │              ▲
             └────────────────┴─── PostgreSQL ──┘              │
                                                               │
-                       sensor.reading.recorded                │
+                     satellite.reading.recorded              │
                   publica ──────────────────▶ RabbitMQ ───────┘
                                                 consumer
 ```
 
 - **auth-service**: registro, login, JWT HS256 (access 15min + refresh 7d), RBAC (producer/agronomist/admin), LGPD delete.
 - **farm-service**: CRUD de Farms, Plots (talhões) e catálogo de Crops (culturas).
-- **sensor-service**: CRUD de Sensors e ingestão de Readings. Publica `sensor.reading.recorded` no barramento.
-- **alert-service**: consome `sensor.reading.recorded`, aplica rule engine, gera Alerts e publica `alert.triggered`.
+- **satellite-service**: CRUD de Satellites e ingestão de Readings. Publica `satellite.reading.recorded` no barramento.
+- **alert-service**: consome `satellite.reading.recorded`, aplica rule engine, gera Alerts e publica `alert.triggered`.
 - **shared package (`terramind-shared`)**: config base, ORM, segurança (JWT, hashing, RBAC), middleware (request_id, security_headers, error_handler) e barramento de eventos com assinatura HMAC.
 
 Diagrama detalhado em [`docs/architecture.md`](docs/architecture.md).
@@ -108,7 +108,7 @@ python scripts/simulate_readings.py --interval 3 --cycles 30
 Acesse os Swaggers:
 - https://localhost:8443/auth/docs
 - https://localhost:8443/farm/docs
-- https://localhost:8443/sensor/docs
+- https://localhost:8443/satellite/docs
 - https://localhost:8443/alert/docs
 
 > O certificado é self-signed em dev — aceite o aviso do navegador ou use `mkcert -install` para confiar localmente.
@@ -179,7 +179,7 @@ Cada serviço expõe documentação OpenAPI auto-gerada. Resumo:
 |---|---|---|
 | auth   | `/auth/...`   | POST `/register`, POST `/login`, POST `/refresh`, GET `/me`, DELETE `/me` |
 | farm   | `/farm/...`   | CRUD `/farms`, CRUD `/plots`, CRUD `/crops` |
-| sensor | `/sensor/...` | CRUD `/sensors`, POST/GET `/sensors/{id}/readings` |
+| satellite | `/satellite/...` | CRUD `/satellites`, POST/GET `/satellites/{id}/readings` |
 | alert  | `/alert/...`  | GET `/alerts`, GET `/alerts/{id}`, PATCH `/alerts/{id}/resolve` |
 
 Todos exigem `Authorization: Bearer <access_token>`, exceto `/auth/register`, `/auth/login` e `/auth/refresh`.
@@ -231,7 +231,7 @@ Terramind/
 ├── services/
 │   ├── auth-service/    (8001)
 │   ├── farm-service/    (8002)
-│   ├── sensor-service/  (8003)
+│   ├── satellite-service/  (8003)
 │   └── alert-service/   (8004)
 ├── infra/
 │   ├── nginx/           # gateway TLS

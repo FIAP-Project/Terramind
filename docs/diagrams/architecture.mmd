@@ -4,7 +4,7 @@
 flowchart LR
     subgraph clients["Clientes"]
         UI["App / Dashboard"]
-        IOT["Sensores IoT"]
+        IOT["Satélites"]
         SIM["simulate_readings.py"]
     end
 
@@ -15,12 +15,12 @@ flowchart LR
     subgraph services["Microsserviços (FastAPI)"]
         AUTH["auth-service<br/>:8001<br/>JWT + RBAC + LGPD"]
         FARM["farm-service<br/>:8002<br/>Farms / Plots / Crops"]
-        SENS["sensor-service<br/>:8003<br/>Sensors + Readings"]
+        SENS["satellite-service<br/>:8003<br/>Satellites + Readings"]
         ALRT["alert-service<br/>:8004<br/>Rule Engine"]
     end
 
     subgraph infra["Infraestrutura"]
-        PG[("PostgreSQL 16<br/>schemas: auth | farm |<br/>sensor | alert")]
+        PG[("PostgreSQL 16<br/>schemas: auth | farm |<br/>satellite | alert")]
         MQ[["RabbitMQ<br/>terramind.events<br/>topic + HMAC"]]
         RD[("Redis<br/>rate-limit cache")]
     end
@@ -40,6 +40,6 @@ flowchart LR
     ALRT --> PG
 
     AUTH -. "publish user.* events" .-> MQ
-    SENS -. "publish sensor.reading.recorded" .-> MQ
+    SENS -. "publish satellite.reading.recorded" .-> MQ
     ALRT -. "publish alert.* events" .-> MQ
-    MQ   -. "consume sensor.reading.recorded" .-> ALRT
+    MQ   -. "consume satellite.reading.recorded" .-> ALRT

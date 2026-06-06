@@ -1,23 +1,23 @@
-%% Sequência do fluxo de alerta: sensor → ingestão → evento → regra → alerta
+%% Sequência do fluxo de alerta: satélite → ingestão → evento → regra → alerta
 
 sequenceDiagram
     autonumber
-    participant Cli as Cliente / Sensor
+    participant Cli as Cliente / Satélite
     participant NX as Nginx (8443)
-    participant SS as sensor-service
+    participant SS as satellite-service
     participant DB as PostgreSQL
     participant MQ as RabbitMQ
     participant AS as alert-service
 
-    Cli->>NX: POST /sensor/sensors/{id}/readings<br/>Authorization: Bearer ...
+    Cli->>NX: POST /satellite/satellites/{id}/readings<br/>Authorization: Bearer ...
     NX->>SS: proxy + rate limit
-    SS->>DB: SELECT sensor by id
-    DB-->>SS: sensor (plot_id, type)
+    SS->>DB: SELECT satellite by id
+    DB-->>SS: satellite (plot_id, type)
     SS->>DB: INSERT reading
-    SS->>MQ: publish sensor.reading.recorded<br/>(HMAC signed)
+    SS->>MQ: publish satellite.reading.recorded<br/>(HMAC signed)
     SS-->>Cli: 201 ReadingOut
 
-    MQ->>AS: deliver sensor.reading.recorded
+    MQ->>AS: deliver satellite.reading.recorded
     AS->>AS: verify HMAC signature
     AS->>AS: RuleEngine.evaluate()
     alt regra dispara
