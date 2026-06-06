@@ -7,7 +7,7 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import pool, text
+from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from terramind_shared.db import Base
@@ -58,7 +58,6 @@ async def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     async with connectable.connect() as connection:
-        await connection.execute(text("CREATE SCHEMA IF NOT EXISTS satellite"))
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()
 
