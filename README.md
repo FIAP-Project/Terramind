@@ -8,6 +8,19 @@ agrícolas (umidade do solo, temperatura, pluviometria), analisá-las contra
 limites ideais por cultura e gerar alertas quando há risco de perda de
 produtividade.
 
+
+## 👥 Integrantes do Grupo
+
+| Nome completo | RM |
+|---|---|
+| *Pedro Henrique Martins Alves dos Santos* | *558107* |
+| *Felipe Cerboncini Cordeiro* | *554909* |
+| *Anthony K. Motobe* | *558488* |
+| *Milena Codinhoto da Silva* | *554682* |
+| *Evellyn Valencia* | *557929* |
+
+---
+
 ---
 
 ## Sumário
