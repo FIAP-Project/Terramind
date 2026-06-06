@@ -17,6 +17,28 @@ ROOT = Path(__file__).resolve().parent.parent
 CERTS_DIR = ROOT / "infra" / "nginx" / "certs"
 
 
+def find_executable(name: str) -> str | None:
+    """Resolve executables in a cross-platform way, including common Windows paths."""
+    direct = shutil.which(name)
+    if direct:
+        return direct
+
+    if sys.platform != "win32":
+        return None
+
+    candidates = [
+        shutil.which(f"{name}.exe"),
+        str(Path.home() / "scoop" / "shims" / f"{name}.exe"),
+        str(Path.home() / "AppData" / "Local" / "Microsoft" / "WinGet" / "Links" / f"{name}.exe"),
+        str(Path("C:/ProgramData/chocolatey/bin") / f"{name}.exe"),
+    ]
+    for candidate in candidates:
+        if candidate and Path(candidate).exists():
+            return candidate
+
+    return None
+
+
 def run(cmd: list[str], **kwargs: object) -> int:
     """Executa um comando, herdando stdout/stderr."""
     print(f"$ {' '.join(cmd)}", flush=True)
@@ -88,7 +110,7 @@ def cmd_lint() -> int:
 
 def cmd_certs() -> int:
     CERTS_DIR.mkdir(parents=True, exist_ok=True)
-    mkcert = shutil.which("mkcert")
+    mkcert = find_executable("mkcert")
     if mkcert:
         print("Usando mkcert...")
         subprocess.run([mkcert, "-install"], check=False)  # noqa: S603
@@ -105,7 +127,7 @@ def cmd_certs() -> int:
             key.rename(CERTS_DIR / "key.pem")
     else:
         print("mkcert não encontrado — usando OpenSSL self-signed...")
-        openssl = shutil.which("openssl")
+        openssl = find_executable("openssl")
         if not openssl:
             print(
                 "ERRO: nem mkcert nem openssl encontrados. "
