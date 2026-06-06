@@ -21,7 +21,7 @@ O Postgres aceita ~100 conexões por padrão, e cada serviço já consome até 3
   queries com `ORDER BY captured_at DESC` sem partição.
 
 ### Ingestão de leituras (satellite-service)
-Com 10.000 satellitees enviando uma leitura por minuto = ~166 req/s — viável,
+Com 10.000 satélites enviando uma leitura por minuto = ~166 req/s — viável,
 mas tendo picos de 10× durante ressincronização (satellite que ficou offline
 e despeja buffer). **Soluções:**
 - **Horizontal scaling** do satellite-service (FastAPI é stateless, basta
@@ -171,8 +171,8 @@ Para produtores no Norte e no Sul do Brasil:
 - **Geo-routing** no DNS (Route 53 latency-based) para roteamento à região
   mais próxima.
 
-### Camada 7 — Edge processing nos satellitees
-Em vez de cada leitura virar um POST HTTP, satellitees publicariam via **MQTT**
+### Camada 7 — Edge processing nos satélites
+Em vez de cada leitura virar um POST HTTP, satélites publicariam via **MQTT**
 para um broker regional (HiveMQ, EMQX). Um adapter MQTT→HTTP/Kafka faria a
 ponte. Vantagem: protocolo desenhado para IoT (QoS, offline buffering, baixo
 consumo de bateria).

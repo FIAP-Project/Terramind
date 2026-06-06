@@ -26,7 +26,7 @@
 | Stream de eventos no RabbitMQ | Dado | Alta | Telemetria em trânsito; assinada com HMAC. |
 | Endpoint público `/auth/login` e `/auth/register` | Superfície | Alta | Alvo de força bruta e enumeração. |
 | Endpoint `/satellite/satellites/{id}/readings` | Superfície | Alta | Alvo de injeção de leituras falsas. |
-| satellitees IoT físicos (futuro) | Dispositivo | Média | Hoje simulados; em produção precisam de mTLS ou API Key dedicada. |
+| satélites IoT físicos (futuro) | Dispositivo | Média | Hoje simulados; em produção precisam de mTLS ou API Key dedicada. |
 | Logs aplicacionais com `request_id` | Dado de auditoria | Média | Fonte de detecção de incidentes. |
 | Certificados TLS | Segredo | Alta | Em produção, rotacionados via ACME. |
 
@@ -35,7 +35,7 @@
 Modelo **STRIDE** aplicado à solução. Listamos quatro vetores de ataque
 plausíveis (o PDF exige no mínimo três):
 
-#### Ameaça 1 — Spoofing: Falsificação de leituras de satellitees
+#### Ameaça 1 — Spoofing: Falsificação de leituras de satélites
 
 - **Cenário**: atacante descobre `serial_number` de um satellite e envia leituras
   forjadas via `POST /satellite/satellites/{id}/readings`.
@@ -291,7 +291,7 @@ Restauração do serviço a estado limpo:
 2. **Validação de integridade**:
    - Conferir contagem de leituras esperada vs presente;
    - Verificar que assinaturas HMAC de eventos arquivados batem;
-3. **Re-enable de ingestão**: voltar satellitees para `status=active`;
+3. **Re-enable de ingestão**: voltar satélites para `status=active`;
 4. **Comunicação aos usuários**:
    - Email/in-app aos produtores afetados (LGPD art. 48 — em até 72h);
    - Notificação à ANPD se houver tratamento de dado pessoal comprometido;
