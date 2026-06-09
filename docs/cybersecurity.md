@@ -33,7 +33,7 @@
 ### 1.2 Modelo de Ameaças (1 pt)
 
 Modelo **STRIDE** aplicado à solução. Listamos quatro vetores de ataque
-plausíveis (o PDF exige no mínimo três):
+plausíveis:
 
 #### Ameaça 1 — Spoofing: Falsificação de leituras de satélites
 
@@ -317,19 +317,3 @@ Restauração do serviço a estado limpo:
 | Recuperação | T+24 h | Restaurar backup, validar integridade, comunicar usuários. |
 | Notificação ANPD | T+72 h (LGPD) | Comunicado oficial à autoridade e titulares se houver dado pessoal afetado. |
 | Lições aprendidas | T+72 h em diante | Postmortem, atualização de testes e treinamento. |
-
----
-
-## Apêndice — Mapeamento dos 10 pontos pedidos no PDF
-
-| Item PDF | Pontos | Local atendido |
-|---|---|---|
-| Identificação de Ativos | 1 | 1.1 |
-| Modelo de Ameaças (≥3 vetores) | 1 | 1.2 (4 vetores: spoofing, tampering, DoS, info disclosure) |
-| Controles de Acesso | 1 | 2.1 |
-| Proteção de Dados | 1 | 2.2 |
-| Segurança da Infraestrutura | 1 | 2.3 |
-| ISO 27001 — Gestão de Riscos | 1 | 3.1 |
-| Privacidade — LGPD | 1 | 3.2 |
-| Plano de Resposta a Incidentes | 3 | Seção 4 (Detecção, Contenção, Erradicação, Recuperação, Lições) |
-| **Total** | **10** | ✔ |
